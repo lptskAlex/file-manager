@@ -109,7 +109,27 @@ export const handleInput = async (input, currentPath) => {
         destinationFile,
         moveFileName
       );
-      await fs.rename(sourceFilePath, destinationFilePath);
+      const readStream = createReadStream(sourceFilePath);
+      const writeStream = createWriteStream(destinationFilePath);
+
+      readStream.pipe(writeStream);
+
+      writeStream.on('finish', () => {
+        fs.unlink(sourcePath, err => {
+          if (err) {
+            console.error('Error deleting source file:', err);
+          } else {
+            console.log('File moved successfully.');
+          }
+        });
+      });
+      readStream.on('error', err => {
+        console.error('Error reading file:', err);
+      });
+
+      writeStream.on('error', err => {
+        console.error('Error writing file:', err);
+      });
       break;
 
     case 'rm':
